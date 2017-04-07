@@ -222,7 +222,20 @@ classdef Updater < hgsetget
                 % Now clear out the source
                 rmdir(src, 's');
 
-                bool = true;
+                % Run any post-install scripts if there are any
+                install_script = fullfile(destination, 'install.m');
+                if exist(install_script, 'file')
+                    % Strip off the trailing file separators and determine
+                    % the package name
+                    pth = regexprep(destination, '[\\\/]*$', '');
+                    [~, pkg] = fileparts(pth);
+                    pkg = regexp(pkg, '(?<=\+).*', 'once', 'match');
+
+                    fcn = str2func(sprintf('plugins.%s.install', pkg));
+                    bool = fcn(self);
+                else
+                    bool = true;
+                end
             catch
                 bool = false;
             end
