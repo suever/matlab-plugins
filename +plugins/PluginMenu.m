@@ -1,5 +1,5 @@
 classdef PluginMenu < hgsetget
-    % PluginMenu - Hierarchical menu for all DENSEanalysis plugins
+    % PluginMenu - Hierarchical menu for all plugins
     %
     %   This class provides a menu which displays all plugins in a
     %   hierarchy and also provides basic menu interaction including
@@ -253,7 +253,7 @@ classdef PluginMenu < hgsetget
             %
             % INPUTS:
             %   plugins:    [M x 1] Handle, Handles to an array of
-            %               subclasses of plugin.DENSEanalysisPlugin.
+            %               subclasses of plugins.BasePlugin.
             %               These plugins will be added to the menu based
             %               upon the package and sub-package that they are
             %               contained within.
@@ -308,8 +308,7 @@ classdef PluginMenu < hgsetget
             %   pm.callback(plugin)
             %
             % INPUTS:
-            %   plugin: Handle, Handle to the DENSEanalysisPlugin
-            %           subclass instance
+            %   plugin: Handle, Handle to the BasePlugin subclass instances
 
             inputs = cat(2, {self.Manager.Data}, varargin);
 

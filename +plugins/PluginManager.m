@@ -250,6 +250,10 @@ classdef PluginManager < handle
                 package = meta.package.fromName('plugins');
             end
 
+            if ischar(package)
+                package = meta.package.fromName(package);
+            end
+
             % Now find the classes derived from base plugin
             if ischar(pluginType)
                 pluginType = meta.class.fromName(pluginType);
