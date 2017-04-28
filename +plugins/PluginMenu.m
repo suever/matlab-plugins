@@ -76,7 +76,6 @@ classdef PluginMenu < hgsetget
                     'Parent must be a figure or uimenu handle')
             end
 
-
             self.Manager = manager;
 
             % Add a listener in case any of the plugins are removed as when
