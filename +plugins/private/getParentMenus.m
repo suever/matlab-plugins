@@ -19,6 +19,7 @@ function parents = getParentMenus(hmenu)
 
         % Only append to the output if it is non-empty and a uimenu
         if ishghandle(parent, 'uimenu')
+            hmenu = parent;
             parents = cat(2, parents, parent);
         else
             return
