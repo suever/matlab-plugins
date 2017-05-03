@@ -318,7 +318,7 @@ classdef PluginManager < handle
             %   info:   Struct, Information about the plugin that was
             %           installed (or not)
 
-            configobj = structobj();
+            configobj = plugins.structobj();
 
             % If no plugin was specified, then open a load dialog
             if ~exist('url', 'var') || isempty(url)

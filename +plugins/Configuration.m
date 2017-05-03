@@ -225,7 +225,7 @@ function S = cells2structs(S)
 
         % Perform same processing on all nested structures
         if isstruct(value)
-            value = arrayfun(@(v)structobj(cells2structs(v)), value, 'uni', 0);
+            value = arrayfun(@(v)plugins.structobj(cells2structs(v)), value, 'uni', 0);
             value = reshape(cat(1, value{:}), size(value));
         end
 
