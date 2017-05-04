@@ -558,5 +558,10 @@ classdef Updater < hgsetget
             error(sprintf('%s:UnsupportedSchema', mfilename), ...
                 'Unsupported URL Type');
         end
+
+        function varargout = loadjson(varargin)
+            % loadjson - Wrapper for JSONLAB loadjson
+            [varargout{1:nargout}] = loadjson(varargin{:});
+        end
     end
 end

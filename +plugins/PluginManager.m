@@ -337,7 +337,7 @@ classdef PluginManager < handle
                 url = sprintf('file:%s', url);
             end
 
-            updater = Updater.create('URL', url, 'Config', configobj);
+            updater = plugins.Updater.create('URL', url, 'Config', configobj);
 
             % For an import we'll simply print status to the command line
             if ~exist('callback', 'var')
@@ -354,12 +354,12 @@ classdef PluginManager < handle
             folder = updater.download(newest);
 
             % Determine installation directory using plugin.json config
-            info = Configuration(fullfile(folder, 'plugin.json'));
+            info = plugins.Configuration(fullfile(folder, 'plugin.json'));
 
             pluginDir = fileparts(mfilename('fullpath'));
             installDir = fullfile(pluginDir, ['+', info.package]);
 
-            settings = Configuration(fullfile(folder, 'settings.json'));
+            settings = plugins.Configuration(fullfile(folder, 'settings.json'));
 
             if ~isfield(settings, 'updater')
                 settings.updater = configobj;
