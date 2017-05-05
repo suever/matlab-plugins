@@ -423,7 +423,7 @@ classdef Updater < hgsetget
 
             set(h, 'HeightLimits', [20 20])
 
-            changelogPanel = MarkdownPanel('Parent', container);
+            changelogPanel = plugins.markdown.MarkdownPanel('Parent', container);
 
             hgroup = uiflowcontainer('v0', ...
                     'Parent',           container, ...
