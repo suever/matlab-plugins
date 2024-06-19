@@ -1,20 +1,23 @@
+[![MATLAB FEX](https://img.shields.io/badge/MATLAB%20FEX-60536-green.svg)][fex]
+[![Minimum Version](https://img.shields.io/badge/Requires-R2019b-blue.svg)][matlab]
+
 # MarkdownPanel
 Control which displays markdown as HTML within a MATLAB control
  
 ------
 This control utilizes the [Showdown javascript library][1] to convert
-markdown into HTML and then uses MATLAB's own `HTMLBrowserPanel` to
-display this HTML.
+markdown into HTML and then uses MATLAB's own `uihtml` component to
+display the resulting HTML.
  
 It behaves like any other graphics object within MATLAB in that all
 properties can either be set upon object construction
  
-    h = MarkdownPanel('Parent', figure, 'Content', '# Hello World!');
+    h = MarkdownPanel('Parent', uifigure(), 'Content', '# Hello World!');
  
 Or after object creation using the returned handle
  
     h = MarkdownPanel();
-    h.Parent = gcf;
+    h.Parent = uifigure();
     set(h, 'Position', [0, 0, 0.5, 0.5])
  
 To set the actual Markdown content, use the `Content` property. You
@@ -64,7 +67,7 @@ into the MATLAB console.
 ------
 **Attribution**
  
-Copyright (c) <2016> [Jonathan Suever][2].  
+Copyright (c) <2024> [Jonathan Suever][2].  
 All rights reserved
  
 This software is licensed under the [BSD license][3]
@@ -73,4 +76,6 @@ This software is licensed under the [BSD license][3]
 [2]: https://github.com/suever
 [3]: https://github.com/suever/MarkdownPanel/blob/master/LICENSE
 [4]: https://cdn.rawgit.com/suever/MarkdownPanel/master/MarkdownPanel.png
+[fex]: https://www.mathworks.com/matlabcentral/fileexchange/60536-markdownpanel
+[matlab]: http://www.mathworks.com/products/matlab/
 
