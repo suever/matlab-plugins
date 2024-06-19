@@ -47,11 +47,23 @@ function jmenu = getJavaMenu(parent, varargin)
         hfig = ancestor(hmenu, 'figure');
         parents = getParentMenus(hmenu);
 
+        if isempty(parents)
+            error(sprintf('%s:MenuNotFound', mfilename), 'unable to find parent menu')
+        end
+
         labels = flipud(get(parents, 'Label'));
         if ischar(labels); labels = {labels}; end
-        jmenu = getJavaMenu(hfig, labels{:});
+        parentMenu = getJavaMenu(hfig, labels{:});
 
-        return;
+        for k = 1:parentMenu.getItemCount()
+            jmenu = parentMenu.getItem(k-1);
+            if strcmp(char(jmenu.getText()), get(hmenu, 'Label'))
+                return
+            end
+        end
+
+        error(sprintf('%s:MenuNotFound', mfilename), ...
+            'Unable to find menu with label "%s"', get(hmenu, 'Label'));
     else
         menubar = javaMethodEDT('getMenuBar', getFigureClient(parent));
 
