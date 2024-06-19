@@ -21,7 +21,7 @@ To make creating plugins easier for your users and ensure that they have all the
 
 ## Attribution
 
-Copyright (c) <2017> [Jonathan Suever][2].  
+Copyright (c) <2024> [Jonathan Suever][2].  
 All rights reserved
 
 This software is licensed under the [MIT license][3]

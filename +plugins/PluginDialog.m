@@ -82,6 +82,36 @@ classdef PluginDialog < hgsetget
             end
         end
 
+        function updatePluginDetails(self, plugin)
+             % updatePluginDetails - Updates fields containing metadata about the plugin
+             %
+             %   This method updates the display of plugin metadata and provides
+             %   buttons for checking for updates and installing updates.
+             %
+             % USAGE:
+             %   desc = self.updatePluginDetails(plugin)
+             %
+             % INPUTS:
+             %   plugin: Object, The plugin object for which we want to
+             %           retrieve the metadata.
+
+            hasUpdate = getfield(plugin.Config.updater, 'hasUpdate', false);
+
+            if hasUpdate
+                versionString = sprintf("Version: %s (update available)", plugin.Version);
+            else
+                versionString = sprintf("Version: %s", plugin.Version);
+            end
+
+            set(self.Handles.pluginDetailName, 'Text', plugin.Name, 'FontWeight', 'bold');
+            set(self.Handles.pluginDetailVersion, 'Text', versionString);
+            set(self.Handles.pluginDetailAuthor, 'Text', sprintf("Author: %s (%s)", plugin.Author, plugin.Email));
+
+            if hasUpdate
+              set(self.Handles.pluginDetailUpdate, 'Visible', 'on');
+            end
+        end
+
         function refresh(self)
             % refresh - Updates the MarkdownPanel and other controls
             %
@@ -92,7 +122,7 @@ classdef PluginDialog < hgsetget
             %   self.refresh()
 
             % Update the displayed names (and version)
-            set(self.Handles.list, 'String', self.MenuLabels);
+            set(self.Handles.list, 'Items', self.MenuLabels, 'ItemsData', self.Plugins);
 
             % Strangely, on Windows we need this explicit pause for the
             % graphics to catch up. Also, drawnow isn't sufficient
@@ -105,6 +135,8 @@ classdef PluginDialog < hgsetget
                 self.Handles.markdown.Content = '';
                 return
             end
+
+            self.updatePluginDetails(self.CurrentPlugin);
 
             % Update the actual markdown description
             set(self.Handles.markdown, 'Content', ...
@@ -128,7 +160,7 @@ classdef PluginDialog < hgsetget
                 return
             end
 
-            original = get(self.Handles.hstatus, 'String');
+            original = get(self.Handles.hstatus, 'Text');
 
             tmr = timer('StartDelay', time, 'TimerFcn', @(s,e)callback());
             start(tmr);
@@ -140,7 +172,7 @@ classdef PluginDialog < hgsetget
 
                 % Only clear it out if the text hasn't been changed
                 if ishghandle(self.Handles.hstatus) && ...
-                    isequal(original, get(self.Handles.hstatus, 'String'))
+                    isequal(original, get(self.Handles.hstatus, 'Text'))
                     % Reset the status text
                     self.setStatus('')
                 end
@@ -213,13 +245,11 @@ classdef PluginDialog < hgsetget
             % USAGE:
             %   self.initGUI()
 
-            dlg = figure( ...
+            dlg = uifigure( ...
                 'Name',         'Plugin Manager', ...
                 'NumberTitle',  'off', ...
                 'Position',     [100 100 850, 425], ...
                 'Menubar',      'none', ...
-                'Toolbar',      'none', ...
-                'DockControls', 'off', ...
                 'Visible',      'on');
 
             % If the figure is removed, then delete the object
@@ -282,77 +312,94 @@ classdef PluginDialog < hgsetget
 
             self.Handles.fig = dlg;
 
-            vbox = uiflowcontainer('v0', ...
-                'Parent',           dlg, ...
-                'FlowDirection',    'topdown');
-
-            hbox = uiflowcontainer('v0', ...
-                'Parent',           vbox, ...
-                'FlowDirection',    'lefttoright', ...
-                'Margin',           10);
-
-            hbutton_box = uiflowcontainer('v0', ...
-                'Parent',           vbox, ...
-                'FlowDirection',    'lefttoright');
-
-            % Use a fixed-height for the buttons
-            set(hbutton_box, 'HeightLimits', [40 40])
-
-            % Place-holder
-            hstatus = uicontrol( ...
-                'Parent',               hbutton_box, ...
-                'Style',                'text', ...
-                'HorizontalAlignment',  'left', ...
-                'String',               '');
-
-            self.Handles.hstatus = hstatus;
-
-            % For now both of these buttons do the same thing
-            hcancel = uicontrol( ...
-                'Parent',   hbutton_box, ...
-                'String',   'Cancel', ...
-                'Callback', @(s,e)delete(self));
-
-            hok = uicontrol( ...
-                'Parent',   hbutton_box, ...
-                'String',   'OK', ...
-                'Callback', @(s,e)delete(self));
-
-            % Make sure that the buttons all remain a fixed-width
-            set([hok, hcancel], 'WidthLimits', [100 150])
+            grid = uigridlayout(dlg, ...
+                'RowHeight',     {'1x', 150, 40}, ...
+                'ColumnWidth',   {300, '1x', 100, 100}, ...
+                'Padding',       [5, 5, 5, 5], ...
+                'RowSpacing',    10, ...
+                'ColumnSpacing', 10);
 
             % Create the menu for modifying the plugins
             self.Handles.listmenu = uicontextmenu('Parent', dlg);
 
-            % Make some of the main menus part of the context menu too
-            copyobj([huninstall, hcheck, himport], self.Handles.listmenu);
-
-            self.Handles.list = uicontrol( ...
-                'Parent',           hbox, ...
-                'Style',            'listbox', ...
-                'Units',            'normalized', ...
+            self.Handles.list = uilistbox( ...
+                'Parent',           grid, ...
                 'BackgroundColor',  'white', ...
-                'FontSize',         10, ...
                 'FontName',         'Arial', ...
-                'Value',            1, ...
-                'Callback',         @(s,e)self.refresh(), ...
-                'UIContextMenu',    self.Handles.listmenu, ...
-                'Position',         [0 0 1 1]);
+                'Value',            {}, ...
+                'ValueChangedFcn',  @(s,e)self.refresh(), ...
+                'UIContextMenu',    self.Handles.listmenu);
+            self.Handles.list.Layout.Row = 1;
+            self.Handles.list.Layout.Column = 1;
 
-            % Make the list of plugins be fixed-width but allow the
-            % markdown panel containing the descriptions to expand
-            set(self.Handles.list, 'WidthLimits', [150 300])
+            self.Handles.pluginDetail = uipanel( ...
+                'Parent',     grid, ...
+                'BorderType', 'none', ...
+                'FontName',   'Arial');
+            self.Handles.pluginDetail.Layout.Row = 2;
+            self.Handles.pluginDetail.Layout.Column = 1;
 
-            % Create the markdown panel on the right to display info
-            self.Handles.markdown = plugins.markdown.MarkdownPanel('Parent', hbox);
+            self.Handles.pluginDetailGrid = uigridlayout(self.Handles.pluginDetail, ...
+                'RowHeight',   {25, 25, 25, '1x', '1x'}, ...
+                'ColumnWidth', {'1x'}, ...
+                'RowSpacing',  5, ...
+                'Padding',     [0, 0, 0, 0]);
 
-            % Get the custom stylesheets
+            self.Handles.pluginDetailName = uilabel(self.Handles.pluginDetailGrid, 'Interpreter', 'html');
+            self.Handles.pluginDetailVersion = uilabel(self.Handles.pluginDetailGrid, 'Interpreter', 'html');
+            self.Handles.pluginDetailAuthor = uilabel(self.Handles.pluginDetailGrid, 'Interpreter', 'html');
+
+            self.Handles.pluginDetailUpdateCheck = uibutton(self.Handles.pluginDetailGrid, ...
+              'Text',            'Check for Updates', ...
+              'Visible',         'on', ...
+              'ButtonPushedFcn', @(s,e)self.checkUpdate(self.UUID));
+
+            self.Handles.pluginDetailUpdate = uibutton(self.Handles.pluginDetailGrid, ...
+              'Text',            'Install Update', ...
+              'Visible',         'off', ...
+              'ButtonPushedFcn', @(s,e)self.CurrentPlugin.update());
+
+            % Get the stylesheet location
             thisdir = fileparts(mfilename('fullpath'));
             privdir = fullfile(thisdir, 'private');
 
-            self.Handles.markdown.StyleSheets = {
-                fullfile('file:///', fullfile(privdir, 'style.css'));
-            };
+            % Create the markdown panel on the right to display info
+            self.Handles.markdown = plugins.markdown.MarkdownPanel( ...
+              'Parent',      grid, ...
+              'StyleSheets', fullfile('file:///', privdir, 'bootstrap.min.css'), ...
+              'Classes',     {'container'});
+
+            self.Handles.markdown.browser.Layout.Row = [1, 2];
+            self.Handles.markdown.browser.Layout.Column = [2, 4];
+
+            % Place-holder
+            hstatus = uilabel( ...
+                'Parent',              grid, ...
+                'HorizontalAlignment', 'left', ...
+                'Text',                'Status...');
+
+            hstatus.Layout.Row = 3;
+            hstatus.Layout.Column = [1, 2];
+
+            self.Handles.hstatus = hstatus;
+
+            % For now both of these buttons do the same thing
+            hcancel = uibutton( ...
+                'Parent',          grid, ...
+                'Text',            'Cancel', ...
+                'ButtonPushedFcn', @(s,e)delete(self));
+            hcancel.Layout.Row = 3;
+            hcancel.Layout.Column = 3;
+
+            hok = uibutton( ...
+                'Parent',   grid, ...
+                'Text',   'OK', ...
+                'ButtonPushedFcn', @(s,e)delete(self));
+            hok.Layout.Row = 3;
+            hok.Layout.Column = 4;
+
+            % Make some of the main menus part of the context menu too
+            copyobj([huninstall, hcheck, himport], self.Handles.listmenu);
 
             % Make sure that the markdown panel is rendered before we try
             % to set the content
@@ -365,9 +412,7 @@ classdef PluginDialog < hgsetget
             % markdownDescription - Retrieve the markdown desc of a plugin
             %
             %   This method provides a custom markdown representation of
-            %   information about a given plugin including hyperlinks which
-            %   allow the user to check for updates and install updates
-            %   from within the markdown itself via a hyperlink.
+            %   information about a given plugin.
             %
             % USAGE:
             %   desc = self.markdownDescription(plugin)
@@ -380,47 +425,16 @@ classdef PluginDialog < hgsetget
             %   desc:   String, Markdown representing the description of
             %           the plugin.
 
-            titlestr = sprintf('## %s\n', plugin.Name);
-
-            author = sprintf('[%s](mailto:%s)', plugin.Author, plugin.Email);
-
-            % Escape the underscores so they aren't replaced by italics
-            url = strrep(plugin.URL, '_', '\\_');
-
-            % Check to see if we have an update and place the appropriate
-            % helper link within the markdown
-            if getfield(plugin.Config.updater, 'hasUpdate', false)
-
-                fmt = '%s.performUpdate(''%s'', ''%s'')';
-                cmd = sprintf(fmt, class(self), self.UUID, class(plugin));
-                vertext = [plugin.Version, ...
-                           ' ([Update Available](matlab:' cmd, '))'];
-            else
-                % Display text to check for an update
-                fmt = '%s.checkUpdate(''%s'', ''%s'')';
-                cmd = sprintf(fmt, class(self), self.UUID, class(plugin));
-                vertext = [plugin.Version, ...
-                           ' ([Check for Updates](matlab:' cmd, '))'];
-            end
-
-            % Create the header section
-            parameters = sprintf('**%s: %s**  \n', ...
-                'Version', vertext, ...
-                'Author', author, ...
-                'Website', sprintf('[%s](%s)', url, plugin.URL));
-
-            desc = sprintf('%s %s\n------\n', titlestr, parameters);
-
             % Check to see if there is a README and if there is, we will
             % append the contents of this README to the description
             readme = fullfile(plugin.InstallDir, 'README.md');
             if exist(readme, 'file')
                 fid = fopen(readme, 'r');
-                desc = [desc, fread(fid, '*char').'];
+                desc = fread(fid, '*char').';
                 fclose(fid);
             else
                 % If there is no README, just use the basic description
-                desc = [desc, plugin.Description];
+                desc = plugin.Description;
             end
         end
 
@@ -446,8 +460,8 @@ classdef PluginDialog < hgsetget
             end
 
             set(self.Handles.hstatus, ...
-                'String',           message, ...
-                'ForegroundColor',  color);
+                'Text',           message, ...
+                'FontColor',  color);
         end
     end
 
@@ -455,17 +469,15 @@ classdef PluginDialog < hgsetget
     methods
         function res = get.CurrentPlugin(self)
             % Figure out which one was selected in the GUI
-            index = get(self.Handles.list, 'Value');
+            res = get(self.Handles.list, 'Value');
 
-            if index == 0 || index > numel(self.Plugins)
+            if isempty(res)
                 if numel(self.Plugins)
-                    res = self.Plugins(1);
-                    set(self.Handles.list, 'Value', 1);
+                    res = self.Plugins(1)
+                    set(self.Handles.list, 'Value', res)
                 else
                     res = [];
                 end
-            else
-                res = self.Plugins(index);
             end
         end
 
@@ -474,8 +486,7 @@ classdef PluginDialog < hgsetget
 
             res = cell(size(plugins));
 
-            % Use some HTML formatting to alter the display
-            fmt = '<html><b>%s</b> <font color="#AAAAAA">(%s)</font></html>';
+            fmt = '%s (%s)';
 
             for k = 1:numel(res)
                 plugin = plugins(k);
