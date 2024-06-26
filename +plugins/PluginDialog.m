@@ -327,8 +327,12 @@ classdef PluginDialog < hgsetget
             % Make some of the main menus part of the context menu too
             copyobj([huninstall, hcheck, himport], self.Handles.listmenu);
 
-            self.Handles.list = uicontrol( ...
+            vboxLeft = uiflowcontainer('v0', ...
                 'Parent',           hbox, ...
+                'FlowDirection',    'topdown');
+
+            self.Handles.list = uicontrol( ...
+                'Parent',           vboxLeft, ...
                 'Style',            'listbox', ...
                 'Units',            'normalized', ...
                 'BackgroundColor',  'white', ...
@@ -339,20 +343,27 @@ classdef PluginDialog < hgsetget
                 'UIContextMenu',    self.Handles.listmenu, ...
                 'Position',         [0 0 1 1]);
 
+            self.Handles.updateButton = uicontrol( ...
+                'Parent',   vboxLeft, ...
+                'Visible',  'off', ...
+                'String',   'Check for Updates');
+
             % Make the list of plugins be fixed-width but allow the
             % markdown panel containing the descriptions to expand
-            set(self.Handles.list, 'WidthLimits', [150 300])
+            set(vboxLeft, 'WidthLimits', [150 300])
 
-            % Create the markdown panel on the right to display info
-            self.Handles.markdown = plugins.markdown.MarkdownPanel('Parent', hbox);
+            set(self.Handles.updateButton, 'HeightLimits', [40 40])
 
             % Get the custom stylesheets
             thisdir = fileparts(mfilename('fullpath'));
             privdir = fullfile(thisdir, 'private');
+            stylesheetURI = fullfile('file:///', fullfile(privdir, 'bootstrap.min.css'));
 
-            self.Handles.markdown.StyleSheets = {
-                fullfile('file:///', fullfile(privdir, 'style.css'));
-            };
+            % Create the markdown panel on the right to display info
+            self.Handles.markdown = plugins.markdown.MarkdownPanel( ...
+                'Parent',       hbox, ...
+                'StyleSheets',  { stylesheetURI }, ...
+                'Classes',      { 'container' });
 
             % Make sure that the markdown panel is rendered before we try
             % to set the content
@@ -382,7 +393,7 @@ classdef PluginDialog < hgsetget
 
             titlestr = sprintf('## %s\n', plugin.Name);
 
-            author = sprintf('[%s](mailto:%s)', plugin.Author, plugin.Email);
+            author = sprintf('%s (%s)', plugin.Author, plugin.Email);
 
             % Escape the underscores so they aren't replaced by italics
             url = strrep(plugin.URL, '_', '\\_');
@@ -390,22 +401,20 @@ classdef PluginDialog < hgsetget
             % Check to see if we have an update and place the appropriate
             % helper link within the markdown
             if getfield(plugin.Config.updater, 'hasUpdate', false)
-
-                fmt = '%s.performUpdate(''%s'', ''%s'')';
-                cmd = sprintf(fmt, class(self), self.UUID, class(plugin));
-                vertext = [plugin.Version, ...
-                           ' ([Update Available](matlab:' cmd, '))'];
+                set(self.Handles.updateButton, ...
+                    'Visible', 'on', ...
+                    'String', 'Install Update', ...
+                    'Callback', @(s,e)self.performUpdate(self.UUID, class(plugin)));
             else
-                % Display text to check for an update
-                fmt = '%s.checkUpdate(''%s'', ''%s'')';
-                cmd = sprintf(fmt, class(self), self.UUID, class(plugin));
-                vertext = [plugin.Version, ...
-                           ' ([Check for Updates](matlab:' cmd, '))'];
+                set(self.Handles.updateButton, ...
+                    'Visible', 'on', ...
+                    'String', 'Check for Update', ...
+                    'Callback', @(s,e)self.checkUpdate(self.UUID, class(plugin)));
             end
 
             % Create the header section
             parameters = sprintf('**%s: %s**  \n', ...
-                'Version', vertext, ...
+                'Version', plugin.Version, ...
                 'Author', author, ...
                 'Website', sprintf('[%s](%s)', url, plugin.URL));
 
@@ -461,6 +470,7 @@ classdef PluginDialog < hgsetget
                 if numel(self.Plugins)
                     res = self.Plugins(1);
                     set(self.Handles.list, 'Value', 1);
+                    set(self.Handles.updateButton, 'Visible', 'off');
                 else
                     res = [];
                 end
